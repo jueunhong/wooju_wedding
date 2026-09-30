@@ -881,7 +881,9 @@ body {
 .cover.is-done { display: none; }
 
 /* =========================================================
-   Back cover — 마지막 장. 도착하면 뒤표지가 오른쪽에서 덮이며 책이 닫힌다
+   Back cover — 마지막 장
+   펼쳐진 책(왼쪽: 마지막 쪽, 오른쪽: 뒤표지 안쪽)이 작게 보이다가
+   뒤표지가 오른쪽 책등을 축으로 오른쪽 → 왼쪽으로 덮이며, 책이 커져 가운데로 온다
    ========================================================= */
 .back-page {
   position: relative;
@@ -895,39 +897,82 @@ body {
   place-items: center;
   background: radial-gradient(120% 80% at 50% 40%, #5a1a1f 0%, #2b0b0e 70%, #1a0608 100%);
   container-type: size;
+  --close-delay: 0.3s;
+  --close-dur: 1.6s;
 }
-.back-book {
+
+/* 책(덮였을 때의 자리). 펼친 상태에서는 작게, 왼쪽으로 비켜 있어 펼친 양면이 화면 가운데에 온다 */
+.back-stage {
+  position: relative;
   width: min(80cqw, calc(70cqh * 1122 / 1402));
   aspect-ratio: 1122 / 1402;
-  transition: none;
+  perspective: 2400px;
+  transform: translateX(-46%) scale(0.54);
+  transition: transform var(--close-dur) cubic-bezier(0.55, 0.05, 0.3, 1) var(--close-delay);
 }
-/* 뒤표지는 책등이 오른쪽 */
-.back-book .book-page {
+
+/* 마지막 쪽 (종이) — 책등은 오른쪽, 종이 단면은 왼쪽 */
+.back-lastpage {
+  position: absolute;
+  inset: 0;
   border-radius: 6px 2px 2px 6px;
+  background: linear-gradient(270deg, #e9dfcf 0, #f6efe4 7%, #f8f2e8 100%);
   box-shadow:
     -4px 0 0 -1px #efe6d8,
     -7px 1px 0 -2px #e6dccb,
     0 18px 40px rgba(0, 0, 0, 0.45);
 }
-.back-book .book-page::after {
-  background: linear-gradient(270deg, rgba(0, 0, 0, 0.28), transparent 9%);
-}
-.back-book-leaf {
+
+/* 뒤표지 한 장: 오른쪽 책등을 축으로 펼쳐져(178°, 오른쪽에 누워 있음) 있다가 덮인다(0°) */
+.back-leaf {
+  position: absolute;
+  inset: 0;
   transform-origin: 100% 50%;
-  transform: rotateY(-150deg);
-  transition: transform 1.5s cubic-bezier(0.55, 0.05, 0.3, 1) 0.25s;
+  transform-style: preserve-3d;
+  transform: rotateY(178deg);
+  transition: transform var(--close-dur) cubic-bezier(0.55, 0.05, 0.3, 1) var(--close-delay);
 }
-.back-book .book-leaf-front,
-.back-book .book-leaf-back { border-radius: 6px 2px 2px 6px; }
-.back-book .book-leaf-front::before {
-  background: linear-gradient(270deg, rgba(0, 0, 0, 0.35) 0, rgba(255, 255, 255, 0.08) 2.5%, transparent 6%);
+.back-leaf-outside,
+.back-leaf-inside {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px 2px 2px 6px;
+  overflow: hidden;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
-.back-book .book-leaf-front::after {
-  background: linear-gradient(270deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.45));
-  opacity: 1;
+.back-leaf-outside img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-.back-page.is-in .back-book-leaf { transform: rotateY(0deg); }
-.back-page.is-in .back-book .book-leaf-front::after { opacity: 0; }
+/* 책등 쪽 음영 + 넘어오는 동안 어두웠다가 밝아지는 빛 */
+.back-leaf-outside::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(270deg, rgba(0, 0, 0, 0.35) 0, rgba(255, 255, 255, 0.08) 2.5%, transparent 6%),
+    linear-gradient(270deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.45));
+  transition: opacity var(--close-dur) ease var(--close-delay);
+}
+/* 뒤표지 안쪽 (면지) */
+.back-leaf-inside {
+  transform: rotateY(180deg);
+  border-radius: 2px 6px 6px 2px;
+  background: linear-gradient(90deg, #e3d7c3 0, #efe6d6 8%, #f3ebdd 100%);
+}
+
+/* 도착하면 덮인다 */
+.back-page.is-in .back-stage { transform: none; }
+.back-page.is-in .back-leaf { transform: rotateY(0deg); }
+.back-page.is-in .back-leaf-outside::after { opacity: 0.35; }
+
+/* 떠날 때는 애니메이션 없이 처음 상태로 (다시 오면 처음부터) */
+.back-page:not(.is-in) .back-stage,
+.back-page:not(.is-in) .back-leaf,
+.back-page:not(.is-in) .back-leaf-outside::after { transition: none; }
 
 /* =========================================================
    Scene enter animations
@@ -954,7 +999,12 @@ body {
   transform: none;
   filter: none;
 }
-/* 인물은 등장하면서 최종 크기(--fg-scale)로 커진다 */
+/* 인물은 등장하면서 최종 크기(--fg-scale)로 천천히 커진다 */
+.scene-art--char img[data-anim] {
+  transition:
+    transform var(--fg-grow-dur, 1.8s) cubic-bezier(0.3, 0.1, 0.2, 1) var(--d, 0s),
+    filter 1.4s var(--ease) var(--d, 0s);
+}
 .scene.is-in .scene-art--char img[data-anim] { transform: scale(var(--fg-scale)); }
 
 /* =========================================================
@@ -965,5 +1015,5 @@ body {
   .swipe-hint i { animation: none; }
   .cover-hint, .cover .book-leaf { animation: none !important; }
   .info-thread path, .info-heart path { stroke-dashoffset: 0; transition: none; }
-  .back-book-leaf { transform: none; transition: none; }
+  .back-leaf, .back-stage { transform: none !important; transition: none !important; }
 }

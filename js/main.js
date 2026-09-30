@@ -79,7 +79,8 @@ layers.forEach(layer => {
 const sceneObserver = new IntersectionObserver(
   entries => {
     entries.forEach(entry => {
-      entry.target.classList.toggle("is-in", entry.isIntersecting);
+      // 표지를 열기 전에는 등장 애니메이션을 시작하지 않는다 (표지가 열린 뒤 1장에서 시작)
+      entry.target.classList.toggle("is-in", entry.isIntersecting && started);
     });
   },
   { root: track, threshold: 0.6 }
@@ -674,17 +675,25 @@ function onPageChange() {
 
 track.addEventListener("scroll", onPageChange, { passive: true });
 
-// 스토리 장면 탭: 화면 오른쪽 2/3 → 다음 장, 왼쪽 1/3 → 이전 장 (스와이프도 그대로 가능)
-// 손가락이 움직였으면(스와이프) 탭으로 치지 않는다
+// 화면 탭: 오른쪽 2/3 → 다음 장, 왼쪽 1/3 → 이전 장 (스와이프도 그대로 가능)
+// 손가락이 움직였으면(스와이프·세로 스크롤) 탭으로 치지 않는다
+// 버튼·링크·입력칸·참석 여부 양식·사진을 누를 때는 넘기지 않는다
 const TAP_MOVE_LIMIT = 10;
+const TAP_IGNORE = "a, button, input, textarea, select, label, form, .rsvp-done, .gallery, .calendar";
 let tapStart = null;
 
 track.addEventListener("pointerdown", e => {
-  tapStart = e.target.closest(".scene") ? { x: e.clientX, y: e.clientY, t: Date.now() } : null;
+  const ignore = e.target.closest(TAP_IGNORE);
+  tapStart = ignore ? null : { x: e.clientX, y: e.clientY, t: Date.now() };
 });
 
 track.addEventListener("pointerup", e => {
   if (!tapStart || !started || lightboxOpen) return;
+  // 글자를 드래그해서 선택한 경우(주소 복사 등)는 넘기지 않는다
+  if (String(window.getSelection && window.getSelection()).trim()) {
+    tapStart = null;
+    return;
+  }
   const moved = Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y);
   const quick = Date.now() - tapStart.t < 500;
   tapStart = null;
@@ -779,7 +788,7 @@ function fillBookPage() {
     if (!src) return;
     const copy = src.cloneNode(true);
     copy.querySelectorAll("[data-thread], .thread-point").forEach(n => n.remove());
-    copy.querySelectorAll("[data-anim]").forEach(n => n.removeAttribute("data-anim"));
+    // data-anim 은 그대로 둬서, 등장 전 1장과 똑같은 모습(작은 인물·옅은 색감)으로 보이게 한다
     copy.removeAttribute("style");
     copy.style.cssText = `
       position: absolute;
@@ -818,6 +827,11 @@ function openCover() {
 function startStory() {
   started = true;
   app.classList.add("is-started");
+
+  // 이제 1장 등장: 인물이 커지고 색이 살아난다
+  const first = pages[currentPage()];
+  void first.offsetWidth;
+  first.classList.add("is-in");
   activePage = -1;
   onPageChange();
 }
