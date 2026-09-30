@@ -73,6 +73,10 @@ body {
    Scene — 화면 한 장
    ========================================================= */
 .scene {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
   position: relative;
   flex: 0 0 100%;
   width: 100%;
@@ -119,14 +123,17 @@ body {
 
 .scene-art--char img:not([src]) { display: none; }
 
-/* 인물 크기 — 전체 기본값은 :root, 장면마다 <section style="--fg-scale: 0.8"> 처럼 따로 조절
-   --fg-origin-y : 줄어들 때 기준이 되는 높이(%). 100 = 이미지 맨 아래 */
+/* 인물 크기 — 장이 넘어오면 인물이 --fg-grow-from 배 크기에서 --fg-scale 크기로 커지며 등장
+   --fg-scale     : 최종 크기 (1 = 원본). 장면마다 <section style="--fg-scale: 0.9"> 처럼 따로 조절
+   --fg-grow-from : 처음 크기 비율 (최종 크기 × 이 값에서 시작)
+   --fg-origin-y  : 커질 때 기준이 되는 높이(%). 100 = 이미지 맨 아래 */
 .scene {
-  --fg-scale: 0.85;
+  --fg-scale: 1;
+  --fg-grow-from: 0.85;
   --fg-origin-y: 100;
 }
 .scene-art--char img {
-  transform: scale(var(--fg-scale));
+  transform: scale(calc(var(--fg-scale) * var(--fg-grow-from)));
   transform-origin: 50% calc(var(--fg-origin-y) * 1%);
 }
 
@@ -947,6 +954,8 @@ body {
   transform: none;
   filter: none;
 }
+/* 인물은 등장하면서 최종 크기(--fg-scale)로 커진다 */
+.scene.is-in .scene-art--char img[data-anim] { transform: scale(var(--fg-scale)); }
 
 /* =========================================================
    Reduced motion

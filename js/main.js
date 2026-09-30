@@ -674,6 +674,29 @@ function onPageChange() {
 
 track.addEventListener("scroll", onPageChange, { passive: true });
 
+// 스토리 장면 탭: 화면 오른쪽 2/3 → 다음 장, 왼쪽 1/3 → 이전 장 (스와이프도 그대로 가능)
+// 손가락이 움직였으면(스와이프) 탭으로 치지 않는다
+const TAP_MOVE_LIMIT = 10;
+let tapStart = null;
+
+track.addEventListener("pointerdown", e => {
+  tapStart = e.target.closest(".scene") ? { x: e.clientX, y: e.clientY, t: Date.now() } : null;
+});
+
+track.addEventListener("pointerup", e => {
+  if (!tapStart || !started || lightboxOpen) return;
+  const moved = Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y);
+  const quick = Date.now() - tapStart.t < 500;
+  tapStart = null;
+  if (moved > TAP_MOVE_LIMIT || !quick) return;
+
+  const rect = track.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  goTo(activePage + (x < 1 / 3 ? -1 : 1));
+});
+
+track.addEventListener("pointercancel", () => (tapStart = null));
+
 prevBtn.addEventListener("click", () => goTo(activePage - 1));
 nextBtn.addEventListener("click", () => goTo(activePage + 1));
 
@@ -851,9 +874,9 @@ function renderCalendar() {
 }
 
 
-/* 참석 여부 응답을 받을 주소.
-   Google Apps Script 웹 앱 URL 등을 넣으면 그 주소로 전송된다 (비워두면 이 기기에만 저장). */
-const RSVP_ENDPOINT = "";
+/* 참석 여부 · 축하 메시지를 받을 구글 시트 (Apps Script 웹 앱 URL).
+   설정 방법은 tools/google-apps-script.gs 맨 위 참고. 비워두면 이 기기에만 저장된다. */
+const RSVP_ENDPOINT = "https://script.google.com/macros/s/AKfycbw6UxsRUEXEx-3xVXDpBfd2E-q5hU21yA1lqC-WSetzfkYPrZwMLrpkvHwri5WfoD8_/exec";
 const RSVP_KEY = "rsvp-2027-10-10";
 
 function escapeHtml(text) {
@@ -918,13 +941,19 @@ function setupRsvp() {
     if (!data.name) return (error.textContent = "성함을 입력해주세요.");
     if (!data.attend) return (error.textContent = "참석 여부를 선택해주세요.");
 
+    // 기기마다 하나의 응답 ID — 다시 작성하면 시트에서 같은 줄이 고쳐진다
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(RSVP_KEY) || "null"); } catch {}
+    data.id = (saved && saved.id) || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
     submit.disabled = true;
+    submit.textContent = "전달하는 중…";
     try {
       if (RSVP_ENDPOINT) {
         await fetch(RSVP_ENDPOINT, {
           method: "POST",
           mode: "no-cors",
-          body: new URLSearchParams({ ...data, count: String(data.count), at: new Date().toISOString() })
+          body: new URLSearchParams({ ...data, count: String(data.count) })
         });
       }
       try { localStorage.setItem(RSVP_KEY, JSON.stringify(data)); } catch {}
@@ -933,6 +962,7 @@ function setupRsvp() {
       error.textContent = "전송에 실패했어요. 잠시 후 다시 시도해주세요.";
     } finally {
       submit.disabled = false;
+      submit.textContent = "전달하기";
     }
   });
 
