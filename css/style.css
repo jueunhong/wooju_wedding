@@ -621,6 +621,98 @@ body {
   cursor: pointer;
 }
 
+/* ---- GALLERY ---- */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+.gallery-item {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  background: #efe6da;
+  cursor: zoom-in;
+}
+.gallery-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s var(--ease);
+}
+.gallery-item:hover img,
+.gallery-item:active img { transform: scale(1.05); }
+.gallery-hint {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--paper-muted);
+}
+
+.lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 8, 8, 0.94);
+  animation: lightboxIn 0.3s ease;
+  touch-action: pan-y;
+}
+@keyframes lightboxIn { from { opacity: 0; } }
+.app.lightbox-open .pager { opacity: 0; pointer-events: none; }
+.app.lightbox-open .pager-btn { pointer-events: none; }
+.lightbox-img {
+  max-width: 100%;
+  max-height: 82%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: opacity 0.2s ease;
+}
+.lightbox-close,
+.lightbox-nav {
+  position: absolute;
+  border: 0;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+.lightbox-close {
+  top: calc(16px + env(safe-area-inset-top));
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 26px;
+}
+.lightbox-nav {
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  transform: translateY(-50%);
+}
+.lightbox-prev { left: 10px; }
+.lightbox-next { right: 10px; }
+.lightbox-count {
+  position: absolute;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.75);
+}
+
 /* 정보 페이지에서는 아래 페이지 표시를 어두운 색으로 */
 .app.on-info .pager { color: var(--paper-ink); text-shadow: none; }
 .app.on-info .pager-btn { background: rgba(142, 31, 43, 0.08); color: var(--burgundy); }

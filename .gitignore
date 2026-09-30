@@ -1,1 +1,4 @@
 .DS_Store
+
+# 원본 사진 (위치 정보가 들어 있을 수 있음) — 웹용은 images/gallery/ 에
+images/IMG_*

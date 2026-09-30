@@ -678,7 +678,7 @@ prevBtn.addEventListener("click", () => goTo(activePage - 1));
 nextBtn.addEventListener("click", () => goTo(activePage + 1));
 
 window.addEventListener("keydown", e => {
-  if (!started) return;
+  if (!started || lightboxOpen) return;
   if (e.key === "ArrowRight") goTo(activePage + 1);
   if (e.key === "ArrowLeft") goTo(activePage - 1);
 });
@@ -997,6 +997,64 @@ function setupCalendarSave() {
   });
 }
 
+/* 갤러리 — 누르면 크게, 좌우 스와이프·화살표로 넘기기 */
+let lightboxOpen = false;
+
+function setupGallery() {
+  const items = [...document.querySelectorAll(".gallery-item")];
+  const box = document.querySelector("#lightbox");
+  if (!items.length || !box) return;
+  const img = document.querySelector("#lightboxImg");
+  const count = document.querySelector("#lightboxCount");
+  const full = items.map(item => item.querySelector("img").src.replace("_s.jpg", ".jpg"));
+  let index = 0;
+
+  const show = i => {
+    index = (i + full.length) % full.length;
+    img.src = full[index];
+    count.textContent = `${index + 1} / ${full.length}`;
+    // 옆 사진 미리 불러오기
+    [index - 1, index + 1].forEach(n => (new Image().src = full[(n + full.length) % full.length]));
+  };
+  const open = i => {
+    show(i);
+    box.hidden = false;
+    lightboxOpen = true;
+    app.classList.add("lightbox-open");
+  };
+  const close = () => {
+    box.hidden = true;
+    lightboxOpen = false;
+    app.classList.remove("lightbox-open");
+  };
+
+  items.forEach((item, i) => item.addEventListener("click", () => open(i)));
+  document.querySelector("#lightboxClose").addEventListener("click", close);
+  document.querySelector("#lightboxPrev").addEventListener("click", () => show(index - 1));
+  document.querySelector("#lightboxNext").addEventListener("click", () => show(index + 1));
+  box.addEventListener("click", e => {
+    if (e.target === box) close();
+  });
+
+  let startX = null;
+  box.addEventListener("touchstart", e => (startX = e.touches[0].clientX), { passive: true });
+  box.addEventListener("touchend", e => {
+    if (startX === null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) show(index + (dx < 0 ? 1 : -1));
+    startX = null;
+  });
+  box.addEventListener("wheel", e => e.preventDefault(), { passive: false });
+
+  window.addEventListener("keydown", e => {
+    if (!lightboxOpen) return;
+    if (e.key === "Escape") close();
+    if (e.key === "ArrowRight") show(index + 1);
+    if (e.key === "ArrowLeft") show(index - 1);
+  });
+}
+
+setupGallery();
 renderCalendar();
 setupCalendarSave();
 setupRsvp();

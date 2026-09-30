@@ -316,6 +316,26 @@
         </div></div>
       </section>
 
+      <!-- 15 GALLERY -->
+      <section class="info-page">
+        <div class="info-scroll"><div class="info-inner">
+          <p class="info-eyebrow" data-anim="fade-up">Gallery</p>
+          <svg class="info-thread" viewBox="0 0 220 28" aria-hidden="true"><path d="M2 14 C 40 2, 70 26, 110 14 S 180 2, 218 14" /></svg>
+          <div class="gallery" id="gallery" data-anim="fade-up" style="--d:.2s">
+            <button type="button" class="gallery-item" data-index="0" aria-label="사진 1 크게 보기"><img src="images/gallery/01_s.jpg" alt="" loading="lazy" /></button>
+            <button type="button" class="gallery-item" data-index="1" aria-label="사진 2 크게 보기"><img src="images/gallery/02_s.jpg" alt="" loading="lazy" /></button>
+            <button type="button" class="gallery-item" data-index="2" aria-label="사진 3 크게 보기"><img src="images/gallery/03_s.jpg" alt="" loading="lazy" /></button>
+            <button type="button" class="gallery-item" data-index="3" aria-label="사진 4 크게 보기"><img src="images/gallery/04_s.jpg" alt="" loading="lazy" /></button>
+            <button type="button" class="gallery-item" data-index="4" aria-label="사진 5 크게 보기"><img src="images/gallery/05_s.jpg" alt="" loading="lazy" /></button>
+            <button type="button" class="gallery-item" data-index="5" aria-label="사진 6 크게 보기"><img src="images/gallery/06_s.jpg" alt="" loading="lazy" /></button>
+            <button type="button" class="gallery-item" data-index="6" aria-label="사진 7 크게 보기"><img src="images/gallery/07_s.jpg" alt="" loading="lazy" /></button>
+            <button type="button" class="gallery-item" data-index="7" aria-label="사진 8 크게 보기"><img src="images/gallery/08_s.jpg" alt="" loading="lazy" /></button>
+            <button type="button" class="gallery-item" data-index="8" aria-label="사진 9 크게 보기"><img src="images/gallery/09_s.jpg" alt="" loading="lazy" /></button>
+          </div>
+          <p class="gallery-hint" data-anim="fade-up" style="--d:.35s">사진을 누르면 크게 볼 수 있어요</p>
+        </div></div>
+      </section>
+
     </div>
 
     <!-- 표지: 탭하면 책이 펼쳐지며 스토리 시작 -->
@@ -333,10 +353,19 @@
       <p class="cover-hint">탭하여 펼치기</p>
     </div>
 
+    <!-- 갤러리 크게 보기 -->
+    <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="사진 크게 보기">
+      <img class="lightbox-img" id="lightboxImg" alt="" />
+      <button type="button" class="lightbox-close" id="lightboxClose" aria-label="닫기">&times;</button>
+      <button type="button" class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="이전 사진">&#8249;</button>
+      <button type="button" class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="다음 사진">&#8250;</button>
+      <p class="lightbox-count" id="lightboxCount"></p>
+    </div>
+
     <!-- 페이지 넘김 -->
     <nav class="pager" aria-label="장면 이동">
       <button class="pager-btn" id="prev" aria-label="이전 장면">&#8249;</button>
-      <span class="pager-count"><b id="pageNow">1</b> / <span id="pageTotal">14</span></span>
+      <span class="pager-count"><b id="pageNow">1</b> / <span id="pageTotal">15</span></span>
       <button class="pager-btn" id="next" aria-label="다음 장면">&#8250;</button>
     </nav>
 
