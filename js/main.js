@@ -2,7 +2,7 @@ const app = document.querySelector("#app");
 const track = document.querySelector("#track");
 
 const scenes = [...document.querySelectorAll(".scene")];            // 스토리 장면 (빨간 실)
-const pages = [...track.querySelectorAll(".scene, .info-page")];     // 넘기는 모든 장
+const pages = [...track.querySelectorAll(".scene, .info-page, .back-page")];   // 넘기는 모든 장
 const infoPages = [...track.querySelectorAll(".info-page")];
 const prevBtn = document.querySelector("#prev");
 const nextBtn = document.querySelector("#next");
@@ -666,7 +666,7 @@ function onPageChange() {
   pageNow.textContent = page + 1;
   prevBtn.disabled = page === 0;
   nextBtn.disabled = page === pages.length - 1;
-  app.classList.toggle("on-info", page >= scenes.length);
+  app.classList.toggle("on-info", pages[page].classList.contains("info-page"));
 
   drawPage(page);
 }
