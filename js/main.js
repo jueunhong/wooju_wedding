@@ -856,6 +856,10 @@ function renderCalendar() {
 const RSVP_ENDPOINT = "";
 const RSVP_KEY = "rsvp-2027-10-10";
 
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
 function setupRsvp() {
   const form = document.querySelector("#rsvp");
   if (!form) return;
@@ -866,11 +870,26 @@ function setupRsvp() {
   const error = form.querySelector(".rsvp-error");
   const submit = form.querySelector(".rsvp-submit");
 
+  const messageBox = form.elements.message;
+  const messageCount = form.elements.messageCount;
+  const doneMessage = done.querySelector(".rsvp-done-message");
+  messageBox.addEventListener("input", () => (messageCount.value = messageBox.value.length));
+
+  // 휴대폰 키보드가 올라와도 입력칸이 가려지지 않게
+  form.addEventListener("focusin", e => {
+    if (e.target.matches("input[type=text], textarea")) {
+      setTimeout(() => e.target.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+    }
+  });
+
   const showDone = data => {
+    // 남긴 메시지는 그대로 보여준다 (textContent 로 넣어 HTML 로 해석되지 않게)
+    doneMessage.textContent = data.message || "";
+    doneMessage.hidden = !data.message;
     done.querySelector(".rsvp-done-body").innerHTML =
       data.attend === "yes"
-        ? `${data.name}님, ${data.count}명 참석으로 전달되었어요.<br />그날 뵙겠습니다.`
-        : `${data.name}님의 축하하는 마음,<br />소중히 간직할게요.`;
+        ? `${escapeHtml(data.name)}님, ${data.count}명 참석으로 전달되었어요.<br />그날 뵙겠습니다.`
+        : `${escapeHtml(data.name)}님의 축하하는 마음,<br />소중히 간직할게요.`;
     form.hidden = true;
     done.hidden = false;
   };
@@ -893,7 +912,8 @@ function setupRsvp() {
     const data = {
       name: form.elements.name.value.trim(),
       attend: form.elements.attend.value,
-      count: form.elements.attend.value === "yes" ? Number(countInput.value) : 0
+      count: form.elements.attend.value === "yes" ? Number(countInput.value) : 0,
+      message: messageBox.value.trim()
     };
     if (!data.name) return (error.textContent = "성함을 입력해주세요.");
     if (!data.attend) return (error.textContent = "참석 여부를 선택해주세요.");
@@ -929,6 +949,8 @@ function setupRsvp() {
       form.querySelector(`input[name="attend"][value="${saved.attend}"]`).checked = true;
       countInput.value = countView.value = saved.count || 1;
       countField.hidden = saved.attend !== "yes";
+      messageBox.value = saved.message || "";
+      messageCount.value = messageBox.value.length;
       showDone(saved);
     }
   } catch {}

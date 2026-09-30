@@ -547,7 +547,8 @@ body {
 }
 .rsvp-field { display: grid; gap: 8px; font-size: 13px; color: var(--paper-muted); }
 .rsvp-field small { font-size: 11px; }
-.rsvp-field input[type="text"] {
+.rsvp-field input[type="text"],
+.rsvp-field textarea {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(142, 31, 43, 0.22);
@@ -557,7 +558,19 @@ body {
   font-size: 16px;
   color: var(--paper-ink);
 }
-.rsvp-field input[type="text"]:focus { outline: none; border-color: var(--burgundy); }
+.rsvp-field input[type="text"]:focus,
+.rsvp-field textarea:focus { outline: none; border-color: var(--burgundy); }
+.rsvp-field textarea {
+  resize: none;
+  line-height: 1.6;
+  font-size: 15px;
+}
+.rsvp-counter {
+  justify-self: end;
+  margin-top: -2px;
+  font-size: 11px;
+  color: var(--paper-muted);
+}
 
 .rsvp-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .rsvp-choice label { position: relative; }
@@ -609,6 +622,20 @@ body {
 .rsvp-done { margin-top: 26px; display: grid; gap: 10px; justify-items: center; }
 .rsvp-done-title { font-size: 17px; font-weight: 700; }
 .rsvp-done-body { font-size: 14px; color: var(--paper-muted); line-height: 1.7; }
+.rsvp-done-message {
+  max-width: 100%;
+  margin-top: 6px;
+  padding: 14px 16px;
+  border-left: 2px solid var(--thread);
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--paper-ink);
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
 .rsvp-edit {
   margin-top: 8px;
   padding: 8px 16px;
