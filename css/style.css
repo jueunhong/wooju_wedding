@@ -1,0 +1,791 @@
+/* =========================================================
+   Tokens
+   ========================================================= */
+:root {
+  --bg: #fbf7f2;
+  --outside: #e9e2da;          /* 데스크톱에서 모바일 프레임 바깥 */
+  --ink: #3b302a;
+  --thread: #e0162f;
+  --thread-shadow: rgba(90, 0, 15, 0.14);
+
+  --paper: #faf6f0;
+  --paper-ink: #3d2a27;
+  --paper-muted: #8b7670;
+  --burgundy: #8e1f2b;
+
+  --app-width: 430px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* =========================================================
+   Base
+   ========================================================= */
+*,
+*::before,
+*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+[hidden] { display: none !important; }
+
+body {
+  background: var(--outside);
+  color: var(--ink);
+  font-family: serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  position: relative;
+  max-width: var(--app-width);
+  height: 100vh;
+  height: 100svh;
+  margin: 0 auto;
+  background: var(--bg);
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+}
+
+/* =========================================================
+   Track — 좌우로 한 장씩 넘기는 가로 스크롤
+   ========================================================= */
+.track {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.track::-webkit-scrollbar { display: none; }
+
+/* =========================================================
+   Scene — 화면 한 장
+   ========================================================= */
+.scene {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;     /* 한 번에 한 장씩만 넘어가게 */
+  container-type: size;
+}
+
+/* 이미지 비율 그대로 화면을 꽉 채우는 상자 (object-fit: cover 와 같은 효과)
+   실 기준점도 이 상자 안에 있어서 이미지와 정확히 맞는다 */
+.scene-art {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100cqw, calc(100cqh * var(--ar)));
+  aspect-ratio: var(--ar);
+  transform: translate(-50%, -50%);
+}
+
+.scene-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 실이 지나가는 보이지 않는 기준점 (이미지 기준 % 좌표) */
+.thread-point {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+}
+
+/* =========================================================
+   Layers — 한 장면 안의 쌓는 순서
+   배경(1) → 인물 뒤로 지나가는 실(2) → 인물(3) → 인물 앞으로 지나가는 실(4)
+   ========================================================= */
+.scene-art            { z-index: 1; }
+.thread--back         { z-index: 2; }
+.scene-art--char      { z-index: 3; pointer-events: none; }
+.thread--front        { z-index: 4; }
+
+.scene-art--char img:not([src]) { display: none; }
+
+/* 인물 크기 — 전체 기본값은 :root, 장면마다 <section style="--fg-scale: 0.8"> 처럼 따로 조절
+   --fg-origin-y : 줄어들 때 기준이 되는 높이(%). 100 = 이미지 맨 아래 */
+.scene {
+  --fg-scale: 0.85;
+  --fg-origin-y: 100;
+}
+.scene-art--char img {
+  transform: scale(var(--fg-scale));
+  transform-origin: 50% calc(var(--fg-origin-y) * 1%);
+}
+
+/* =========================================================
+   Red thread
+   장면마다 같은 실 경로를 가진 SVG가 있고, viewBox로 그 장 부분만 보여준다
+   ========================================================= */
+.thread {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.thread path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.thread-path {
+  stroke: var(--thread);
+  stroke-width: 1.8;
+  transition: filter 1.2s ease;
+}
+/* 하트까지 다 그려지면 은은하게 빛나기 */
+.track.is-complete .thread-path {
+  filter: drop-shadow(0 0 3px rgba(255, 90, 110, 0.9));
+}
+
+.thread-shadow {
+  stroke: var(--thread-shadow);
+  stroke-width: 3;
+  transform: translate(0.5px, 1.5px);
+}
+
+.thread-tip {
+  fill: var(--thread);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.track.is-drawing .thread-tip { opacity: 1; }
+
+/* =========================================================
+   Pager
+   ========================================================= */
+.pager {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.pager-count {
+  min-width: 56px;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+}
+
+.pager-btn {
+  pointer-events: auto;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.3s, background 0.2s;
+}
+.pager-btn:hover { background: rgba(255, 255, 255, 0.35); }
+.pager-btn:disabled { opacity: 0; pointer-events: none; }
+
+/* ---- 첫 장 안내 ---- */
+.swipe-hint {
+  position: absolute;
+  right: 22px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+.swipe-hint i {
+  width: 32px;
+  height: 1px;
+  background: linear-gradient(90deg, #fff, transparent);
+  animation: hint 1.8s var(--ease) infinite;
+  transform-origin: left;
+}
+@keyframes hint {
+  0%   { transform: scaleX(0); opacity: 1; }
+  70%  { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+.app.has-moved .swipe-hint { opacity: 0 !important; }
+
+/* =========================================================
+   Narration — 장면 위 내레이션
+   ========================================================= */
+.narration {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 6;
+  padding: calc(44px + env(safe-area-inset-top)) 28px 72px;
+  font-family: "Gowun Batang", serif;
+  font-size: 17px;
+  line-height: 1.75;
+  letter-spacing: -0.01em;
+  text-align: center;
+  color: #fff;
+  word-break: keep-all;
+  text-wrap: balance;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45), 0 0 3px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(rgba(20, 8, 6, 0.5), rgba(20, 8, 6, 0.22) 55%, transparent);
+  pointer-events: none;
+}
+.narration--bottom {
+  top: auto;
+  bottom: 0;
+  padding: 72px 28px calc(86px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(20, 8, 6, 0.22) 45%, rgba(20, 8, 6, 0.5));
+}
+/* 표지를 여는 동안에는 숨겨 두었다가, 시작하면 나타난다 */
+.app:not(.is-started) .narration { opacity: 0 !important; }
+
+/* =========================================================
+   Info pages — 스토리 다음 초대 정보 (날짜 / 장소 / 안내 / 참석 여부)
+   ========================================================= */
+.info-page {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  color: var(--paper-ink);
+  background:
+    radial-gradient(120% 60% at 50% 0%, #fffdf9 0%, transparent 60%),
+    radial-gradient(90% 50% at 50% 100%, #f3ebe0 0%, transparent 70%),
+    var(--paper);
+  font-family: "Gowun Batang", serif;
+}
+/* 표지와 어울리는 얇은 테두리 */
+.info-page::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(142, 31, 43, 0.22);
+  outline: 1px solid rgba(142, 31, 43, 0.1);
+  outline-offset: 4px;
+  pointer-events: none;
+}
+
+.info-scroll {
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: calc(52px + env(safe-area-inset-top)) 34px calc(92px + env(safe-area-inset-bottom));
+  scrollbar-width: none;
+}
+.info-scroll::-webkit-scrollbar { display: none; }
+.info-inner {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.info-eyebrow {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  color: var(--burgundy);
+}
+.info-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+/* 페이지마다 그려지는 작은 빨간 실 */
+.info-thread {
+  width: 132px;
+  height: 18px;
+  margin: 10px 0 22px;
+  overflow: visible;
+}
+.info-thread path,
+.info-heart path {
+  fill: none;
+  stroke: var(--thread);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  transition: stroke-dashoffset 1.6s var(--ease) 0.2s;
+}
+.info-page.is-in .info-thread path,
+.info-page.is-in .info-heart path { stroke-dashoffset: 0; }
+
+/* ---- SAVE THE DATE ---- */
+.info-parents {
+  display: grid;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--paper-muted);
+}
+.info-parents b {
+  margin-left: 4px;
+  font-size: 18px;
+  color: var(--paper-ink);
+}
+.info-parents span { color: var(--paper-ink); }
+
+.info-date {
+  margin: 22px 0 18px;
+  padding: 10px 0;
+  width: 100%;
+  border-top: 1px solid rgba(142, 31, 43, 0.18);
+  border-bottom: 1px solid rgba(142, 31, 43, 0.18);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+
+.calendar {
+  width: 100%;
+  max-width: 300px;
+}
+.calendar-month {
+  margin-bottom: 10px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  color: var(--burgundy);
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 4px;
+  font-size: 14px;
+}
+.calendar-grid > * {
+  display: grid;
+  place-items: center;
+  height: 34px;
+}
+.calendar-head { font-size: 12px; color: var(--paper-muted); }
+.calendar-head:first-child,
+.calendar-day.is-sun { color: #c0392b; }
+.calendar-day.is-sat { color: #3d6fb4; }
+.calendar-day.is-wedding {
+  position: relative;
+  color: #fff;
+  font-weight: 700;
+}
+.calendar-day.is-wedding::before {
+  content: "";
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--burgundy);
+  z-index: -1;
+}
+.calendar-day.is-wedding { isolation: isolate; }
+
+.cal-save {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.cal-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.cal-save-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.cal-save-alt {
+  font-size: 12px;
+  color: var(--paper-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dday {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--paper-muted);
+}
+.dday b { color: var(--burgundy); }
+
+/* ---- LOCATION ---- */
+/* 위쪽 빈 하늘은 잘라내고, 가장자리는 종이에 스며들듯 흐리게 */
+.location-art {
+  display: block;
+  width: calc(100% + 20px);
+  max-width: none;
+  height: auto;
+  aspect-ratio: 1536 / 820;
+  margin: 10px -10px 0;
+  object-fit: cover;
+  object-position: 50% 100%;
+  -webkit-mask-image: radial-gradient(120% 110% at 50% 45%, #000 62%, transparent 100%);
+  mask-image: radial-gradient(120% 110% at 50% 45%, #000 62%, transparent 100%);
+}
+
+.map-buttons {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 22px;
+}
+
+/* 세로가 짧은 화면에서는 그림과 간격을 줄여 한 화면에 들어오게 */
+@media (max-height: 740px) {
+  .location-art { width: 78%; margin: 4px auto 0; }
+  .map-buttons { margin: 8px 0 14px; }
+  .route { gap: 10px; }
+  .route-item { padding: 12px 16px; }
+}
+.map-btn {
+  min-width: 112px;
+  padding: 11px 16px;
+  border: 1px solid rgba(142, 31, 43, 0.35);
+  border-radius: 999px;
+  color: var(--burgundy);
+  font-size: 14px;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.6);
+  transition: background 0.2s, color 0.2s;
+}
+.map-btn:active,
+.map-btn:hover { background: var(--burgundy); color: #fff; }
+
+.route {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+}
+.route-item {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 1px 0 rgba(142, 31, 43, 0.08);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.route-item h3 {
+  margin-bottom: 6px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--burgundy);
+}
+.route-or,
+.route-note { color: var(--paper-muted); font-size: 13px; }
+.route-or { margin-top: 4px; }
+
+/* ---- 축의 없는 결혼식 ---- */
+.info-heart {
+  width: 64px;
+  height: 58px;
+  margin-bottom: 18px;
+  overflow: visible;
+}
+.info-message {
+  font-size: 16px;
+  line-height: 2;
+  color: var(--paper-ink);
+}
+
+/* ---- 참석 여부 ---- */
+.rsvp {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  margin-top: 22px;
+  text-align: left;
+}
+.rsvp-field { display: grid; gap: 8px; font-size: 13px; color: var(--paper-muted); }
+.rsvp-field small { font-size: 11px; }
+.rsvp-field input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(142, 31, 43, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+  font: inherit;
+  font-size: 16px;
+  color: var(--paper-ink);
+}
+.rsvp-field input[type="text"]:focus { outline: none; border-color: var(--burgundy); }
+
+.rsvp-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rsvp-choice label { position: relative; }
+.rsvp-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.rsvp-choice em {
+  display: block;
+  padding: 12px 6px;
+  border: 1px solid rgba(142, 31, 43, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+  font-style: normal;
+  font-size: 14px;
+  text-align: center;
+  color: var(--paper-ink);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.rsvp-choice input:checked + em { background: var(--burgundy); border-color: var(--burgundy); color: #fff; }
+.rsvp-choice input:focus-visible + em { outline: 2px solid var(--burgundy); outline-offset: 2px; }
+
+.stepper { display: flex; align-items: center; gap: 18px; }
+.stepper button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(142, 31, 43, 0.3);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--burgundy);
+  font-size: 18px;
+  cursor: pointer;
+}
+.stepper output { min-width: 24px; text-align: center; font-size: 18px; color: var(--paper-ink); }
+
+.rsvp-submit {
+  margin-top: 4px;
+  padding: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--burgundy);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.rsvp-submit:disabled { opacity: 0.6; }
+.rsvp-error { min-height: 1em; font-size: 12px; color: #c0392b; text-align: center; }
+
+.rsvp-done { margin-top: 26px; display: grid; gap: 10px; justify-items: center; }
+.rsvp-done-title { font-size: 17px; font-weight: 700; }
+.rsvp-done-body { font-size: 14px; color: var(--paper-muted); line-height: 1.7; }
+.rsvp-edit {
+  margin-top: 8px;
+  padding: 8px 16px;
+  border: 1px solid rgba(142, 31, 43, 0.3);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--burgundy);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* 정보 페이지에서는 아래 페이지 표시를 어두운 색으로 */
+.app.on-info .pager { color: var(--paper-ink); text-shadow: none; }
+.app.on-info .pager-btn { background: rgba(142, 31, 43, 0.08); color: var(--burgundy); }
+
+/* =========================================================
+   Cover — 책 표지. 탭하면 표지가 왼쪽으로 넘어가고, 첫 장으로 확대되며 스토리 시작
+   ========================================================= */
+.cover {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background:
+    radial-gradient(120% 80% at 50% 40%, #5a1a1f 0%, #2b0b0e 70%, #1a0608 100%);
+  cursor: pointer;
+  container-type: size;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.6s ease;
+}
+.cover:focus-visible { outline: none; }
+
+.book {
+  position: relative;
+  width: min(80cqw, calc(70cqh * 1086 / 1448));
+  aspect-ratio: 1086 / 1448;
+  perspective: 2200px;
+  transform: scale(1);
+  transform-origin: 50% 50%;
+  transition: transform 1s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* 첫 장 (표지 아래 종이) */
+.book-page {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 2px 6px 6px 2px;
+  background: #f6efe4;
+  box-shadow:
+    4px 0 0 -1px #efe6d8,
+    7px 1px 0 -2px #e6dccb,
+    0 18px 40px rgba(0, 0, 0, 0.45);
+}
+.book-page .scene-art { z-index: 0; }
+/* 첫 장 안쪽 가장자리 그림자 (책 제본 쪽) */
+.book-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.28), transparent 9%);
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+/* 넘어가는 표지 한 장 */
+.book-leaf {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+  transition: transform 1.3s cubic-bezier(0.55, 0.05, 0.3, 1);
+}
+.book-leaf-front,
+.book-leaf-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px 6px 6px 2px;
+  overflow: hidden;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.book-leaf-front img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* 책등 쪽 음영 + 넘어갈 때 어두워지는 빛 */
+.book-leaf-front::before,
+.book-leaf-front::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.book-leaf-front::before {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0, rgba(255, 255, 255, 0.08) 2.5%, transparent 6%);
+}
+.book-leaf-front::after {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.45));
+  opacity: 0;
+  transition: opacity 1.3s ease;
+}
+.book-leaf-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(90deg, #efe6d6, #e3d7c3);
+}
+
+.cover-hint {
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: rgba(255, 228, 220, 0.8);
+  animation: coverHint 2.2s ease-in-out infinite;
+  transition: opacity 0.3s;
+}
+@keyframes coverHint {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1; }
+}
+
+/* 대기 중: 책이 살짝 숨 쉬듯 */
+.cover:not(.is-opening) .book-leaf { animation: bookIdle 3.2s ease-in-out infinite; }
+@keyframes bookIdle {
+  0%, 100% { transform: rotateY(0deg); }
+  50%      { transform: rotateY(-7deg); }
+}
+
+/* 펼치기 */
+.cover.is-opening { cursor: default; }
+.cover.is-opening .cover-hint { opacity: 0; animation: none; }
+.cover.is-opening .book-leaf { transform: rotateY(-178deg); }
+.cover.is-opening .book-leaf-front::after { opacity: 1; }
+
+/* 첫 장으로 확대 */
+.cover.is-zooming .book { transform: scale(var(--zoom, 3)); }
+.cover.is-zooming .book-page { box-shadow: none; }
+.cover.is-zooming .book-page::after { opacity: 0; }
+
+.cover.is-done { display: none; }
+
+/* =========================================================
+   Scene enter animations
+   .scene.is-in 이 붙으면 내부 [data-anim] 요소가 등장.
+   이미지는 위치가 바뀌면 실과 어긋나므로 색감만 변한다.
+   ========================================================= */
+[data-anim] {
+  opacity: 0;
+  transition:
+    opacity 1s var(--ease) var(--d, 0s),
+    transform 1.2s var(--ease) var(--d, 0s),
+    filter 1.4s var(--ease) var(--d, 0s);
+}
+[data-anim="fade-up"] { transform: translateY(14px); }
+.scene-art img[data-anim],
+.scene-art--char img[data-anim] {
+  opacity: 1;
+  filter: brightness(1.18) saturate(0.6);
+}
+
+.scene.is-in [data-anim],
+.info-page.is-in [data-anim] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* =========================================================
+   Reduced motion
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  [data-anim] { opacity: 1; filter: none; transition: none; }
+  .swipe-hint i { animation: none; }
+  .cover-hint, .cover .book-leaf { animation: none !important; }
+  .info-thread path, .info-heart path { stroke-dashoffset: 0; transition: none; }
+}

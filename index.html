@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#fbf7f2" />
+  <title>우리의 이야기 · 청첩장</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="app" id="app">
+
+    <!--
+      책장을 넘기듯 좌우로 넘기는 스토리.
+      장면 = 화면 한 장. 이미지는 화면을 꽉 채우고(cover), 실이 지나갈 점은
+      <span class="thread-point" data-thread style="left:X%; top:Y%"> (이미지 기준 % 좌표)로 지정한다.
+      점은 왼쪽 → 오른쪽 방향으로, 적힌 순서대로 이어진다.
+      - 화면 비율에 따라 이미지 좌우가 잘리므로, 화면 안에 보여야 하는 점은 x 10% ~ 90% 안쪽이 안전하다
+      - data-thread-finale : 마지막 장에서 여기까지 그린 뒤 하트를 그린다
+      - data-heart="20"    : 이 점(하트 아래 꼭짓점)에서 이미지 폭 20% 크기의 하트를 그린다
+                             앞 점은 꼭짓점 왼쪽 아래, 다음 점은 오른쪽 아래에 두면 실이 X자로 엇갈리며 이어진다
+      - data-behind        : 이 점에서 다음 점까지는 실이 인물 "뒤"로 지나간다
+                             실이 인물과 겹치는 한 덩어리는 통째로 앞 또는 뒤로 정해져서 몸을 뚫고 지나가지 않는다
+                             (덩어리 안에서 data-behind 구간이 절반 이상이면 뒤, 아니면 앞)
+                             인물 PNG를 바꾸면 python3 tools/make_masks.py 를 다시 실행
+      - data-fg            : 인물 위의 점. 인물 크기(--fg-scale)를 바꾸면 같이 움직인다
+                             (표시가 없는 점은 화면에 보이는 최종 그림 기준으로 제자리)
+      - left 를 0% 보다 작게 / 100% 보다 크게 주면 화면 밖 점이 된다.
+        실이 화면 밖으로 나갔다가 돌아 들어오게 해서, 한 장에 여러 가닥이 지나가는 것처럼 보이게 할 수 있다.
+        (화면 밖에서 도는 부분은 옆 장에 비치지 않는다)
+      - 인물 크기: css 의 --fg-scale (기본 0.85). 장면마다 <section style="--fg-scale: 0.8"> 로 따로 조절
+      - 장 경계(left:0% / left:100%)의 top 값을 앞뒤 장과 맞추면 실이 끊김 없이 이어진다
+
+      [실 앞/뒤를 장면 전체로 고정]
+      <section data-thread-layer="behind"> : 그 장의 실은 전부 인물 뒤로
+      <section data-thread-layer="front">  : 그 장의 실은 전부 인물 앞으로
+
+      [내레이션]
+      장면마다 <p class="narration"> 한 줄. 기본은 화면 위쪽,
+      class="narration narration--bottom" 이면 화면 아래쪽에 나온다.
+
+      [배경 / 인물 이미지]
+      장면마다 images/NN_bg.png (배경) 와 images/NN_fg.png (인물, 투명 PNG) 한 세트.
+      배경은 <img class="scene-bg">, 인물은 <section data-fg="..."> 로 지정한다.
+      두 파일은 캔버스 크기가 같아야 하고, 실 좌표는 이 캔버스 기준 % 이다.
+    -->
+    <div class="track" id="track">
+
+
+      <!-- 01 어린 시절 -->
+      <section class="scene" data-fg="images/01_fg.png">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/01_bg.png" width="941" height="1672" alt="어린 시절의 두 사람" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:40%"></span>
+          <span class="thread-point" data-thread style="left:8%; top:52%"></span>
+          <span class="thread-point" data-thread style="left:25%; top:64%"></span>
+          <span class="thread-point" data-thread style="left:47%; top:66%"></span>
+          <span class="thread-point" data-thread style="left:62%; top:75%"></span>
+          <span class="thread-point" data-thread style="left:82%; top:71%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:70%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">어린 주은은 노래하고 춤추는 것을,<br />어린 우진은 친구와 게임하기를<br />좋아했습니다.</p>
+        <div class="swipe-hint" data-anim="fade" style="--d:1.2s"><span>옆으로 넘겨주세요</span><i></i></div>
+      </section>
+
+      <!-- 02 학창시절 여자 -->
+      <section class="scene" data-fg="images/02_fg.png">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/02_bg.png" width="941" height="1672" alt="공부하는 소녀" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:70%"></span>
+          <span class="thread-point" data-thread style="left:22%; top:74%"></span>
+          <span class="thread-point" data-thread style="left:55%; top:80%"></span>
+          <span class="thread-point" data-thread style="left:86%; top:86%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:90%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">주은은 그림을 잘 그렸고,</p>
+      </section>
+
+      <!-- 03 학창시절 남자 -->
+      <section class="scene" data-fg="images/03_fg.png" data-thread-layer="behind">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/03_bg.png" width="941" height="1672" alt="공부하는 소년" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:90%"></span>
+          <span class="thread-point" data-thread style="left:16%; top:94%"></span>
+          <span class="thread-point" data-thread style="left:50%; top:96%"></span>
+          <span class="thread-point" data-thread style="left:84%; top:94%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:90%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">우진은 수학을 잘했어요.</p>
+      </section>
+
+      <!-- 04 학창시절 여자 공부 -->
+      <section class="scene" data-fg="images/04_fg.png" data-thread-layer="front">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/04_bg.png" width="941" height="1672" alt="공부하는 소녀" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:90%"></span>
+          <span class="thread-point" data-thread style="left:22%; top:92%"></span>
+          <span class="thread-point" data-thread style="left:50%; top:91%"></span>
+          <span class="thread-point" data-thread style="left:78%; top:86%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:74%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">둘은 서로를 몰랐고,<br />성향은 아주 달랐지만</p>
+      </section>
+
+      <!-- 05 농구 -->
+      <section class="scene" data-fg="images/05_fg.png" data-thread-layer="behind">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/05_bg.png" width="941" height="1672" alt="농구하는 소년" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:74%"></span>
+          <span class="thread-point" data-thread data-behind style="left:15%; top:70%"></span>
+          <span class="thread-point" data-thread style="left:50%; top:62%"></span>
+          <span class="thread-point" data-thread style="left:80%; top:58%"></span>
+          <span class="thread-point" data-thread style="left:108%; top:50%"></span>
+          <span class="thread-point" data-thread data-behind style="left:92%; top:30%"></span>
+          <span class="thread-point" data-thread data-behind style="left:74%; top:19%"></span>
+          <span class="thread-point" data-thread style="left:56%; top:20%"></span>
+          <span class="thread-point" data-thread style="left:40%; top:24%"></span>
+          <span class="thread-point" data-thread style="left:-8%; top:38%"></span>
+          <span class="thread-point" data-thread data-behind style="left:12%; top:86%"></span>
+          <span class="thread-point" data-thread style="left:60%; top:90%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:86%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s; padding-top: 104px; padding-right: 96px; text-align: left">가족에게 받은 지지와<br />안에 있는 열정만큼은 같았어요.</p>
+      </section>
+
+      <!-- 06 성인 여자 -->
+      <section class="scene" data-fg="images/06_fg.png" data-thread-layer="behind">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/06_bg.png" width="941" height="1672" alt="하늘을 올려다보는 여자" data-anim />
+          <span class="thread-point" data-thread data-behind style="left:0%; top:86%"></span>
+          <span class="thread-point" data-thread data-behind style="left:14%; top:80%"></span>
+          <span class="thread-point" data-thread data-behind style="left:40%; top:76%"></span>
+          <span class="thread-point" data-thread data-behind style="left:108%; top:66%"></span>
+          <span class="thread-point" data-thread data-behind style="left:92%; top:40%"></span>
+          <span class="thread-point" data-thread data-behind style="left:82%; top:20%"></span>
+          <span class="thread-point" data-thread data-behind style="left:55%; top:8%"></span>
+          <span class="thread-point" data-thread data-behind style="left:-8%; top:20%"></span>
+          <span class="thread-point" data-thread data-behind style="left:14%; top:28%"></span>
+          <span class="thread-point" data-thread data-behind style="left:60%; top:26%"></span>
+          <span class="thread-point" data-thread data-behind style="left:100%; top:30%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">각자 꿈을 찾는 여정을 시작했어요.</p>
+      </section>
+
+      <!-- 07 성인 남자 -->
+      <section class="scene" data-fg="images/07_fg.png" data-thread-layer="behind">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/07_bg.png" width="941" height="1672" alt="일하는 남자" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:30%"></span>
+          <span class="thread-point" data-thread style="left:40%; top:24%"></span>
+          <span class="thread-point" data-thread style="left:80%; top:13%"></span>
+          <span class="thread-point" data-thread style="left:108%; top:16%"></span>
+          <span class="thread-point" data-thread style="left:90%; top:42%"></span>
+          <span class="thread-point" data-thread data-behind style="left:60%; top:40%"></span>
+          <span class="thread-point" data-thread style="left:20%; top:46%"></span>
+          <span class="thread-point" data-thread style="left:-8%; top:60%"></span>
+          <span class="thread-point" data-thread style="left:20%; top:82%"></span>
+          <span class="thread-point" data-thread style="left:60%; top:84%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:78%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">밤을 새며 꿈을 위한 도전을 해나갔어요.</p>
+      </section>
+
+      <!-- 08 만남 -->
+      <section class="scene" data-fg="images/08_fg.png" data-thread-layer="front">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/08_bg.png" width="941" height="1672" alt="처음 만난 두 사람" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:78%"></span>
+          <span class="thread-point" data-thread style="left:20%; top:76%"></span>
+          <span class="thread-point" data-thread style="left:40%; top:68%"></span>
+          <span class="thread-point" data-thread style="left:52%; top:63%"></span>
+          <span class="thread-point" data-thread style="left:66%; top:70%"></span>
+          <span class="thread-point" data-thread style="left:85%; top:78%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:78%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">꿈을 찾아 가는 길 위<br />같은 골목에서 둘은 만났어요.</p>
+      </section>
+
+      <!-- 09 함께 일하기 -->
+      <section class="scene" data-fg="images/09_fg.png" data-thread-layer="behind">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/09_bg.png" width="941" height="1672" alt="함께 일하는 두 사람" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:78%"></span>
+          <span class="thread-point" data-thread style="left:16%; top:85%"></span>
+          <span class="thread-point" data-thread style="left:48%; top:88%"></span>
+          <span class="thread-point" data-thread style="left:80%; top:87%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:84%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">둘은 이제 혼자가 아닌 함께,<br />꿈을 이뤄가고 있어요.</p>
+      </section>
+
+      <!-- 10 엔딩 -->
+      <section class="scene" data-fg="images/10_fg.png" data-thread-layer="behind" style="--fg-origin-y: 75">
+        <div class="scene-art" style="--ar: 941 / 1672">
+          <img class="scene-bg" src="images/10_bg.png" width="941" height="1672" alt="노을을 함께 바라보는 두 사람" data-anim />
+          <span class="thread-point" data-thread style="left:0%; top:84%"></span>
+          <span class="thread-point" data-thread style="left:-6%; top:70%"></span>
+          <span class="thread-point" data-thread style="left:-6%; top:52%"></span>
+          <span class="thread-point" data-thread style="left:8%; top:43%"></span>
+          <span class="thread-point" data-thread style="left:18%; top:41%"></span>
+          <span class="thread-point" data-thread data-thread-finale style="left:33%; top:39%"></span>
+          <span class="thread-point" data-thread data-heart="20" style="left:47%; top:34%"></span>
+          <span class="thread-point" data-thread style="left:60%; top:39%"></span>
+          <span class="thread-point" data-thread style="left:80%; top:34%"></span>
+          <span class="thread-point" data-thread style="left:100%; top:29%"></span>
+        </div>
+        <p class="narration" data-anim="fade-up" style="--d:.5s">이제는 부부가 되어<br />평생이란 여정을 함께 떠나려고 합니다.</p>
+      </section>
+
+      <!-- ===================== 초대 정보 ===================== -->
+
+      <!-- 11 SAVE THE DATE -->
+      <section class="info-page">
+        <div class="info-scroll"><div class="info-inner">
+          <p class="info-eyebrow" data-anim="fade-up">Save the Date</p>
+          <svg class="info-thread" viewBox="0 0 220 28" aria-hidden="true"><path d="M2 14 C 40 2, 70 26, 110 14 S 180 2, 218 14" /></svg>
+          <div class="info-parents" data-anim="fade-up" style="--d:.15s">
+            <p><span>이강혁 · 김계현</span>의 아들 <b>이우진</b></p>
+            <p><span>홍흥표 · 박수정</span>의 딸 <b>홍주은</b></p>
+          </div>
+          <p class="info-date" data-anim="fade-up" style="--d:.3s">
+            2027. 10. 10. 일요일 오전 11시
+          </p>
+          <div class="calendar" id="calendar" data-date="2027-10-10T11:00:00+09:00" data-anim="fade-up" style="--d:.45s"></div>
+          <div class="cal-save" data-anim="fade-up" style="--d:.55s">
+            <button type="button" class="map-btn cal-save-btn" id="calSave">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 10h17M8 3v4M16 3v4M12 13v5M9.5 15.5h5" /></svg>
+              캘린더에 저장
+            </button>
+            <a class="cal-save-alt" id="calSaveGoogle" target="_blank" rel="noopener">구글 캘린더로 저장</a>
+          </div>
+          <p class="dday" id="dday" data-anim="fade-up" style="--d:.6s"></p>
+        </div></div>
+      </section>
+
+      <!-- 12 LOCATION -->
+      <section class="info-page">
+        <div class="info-scroll"><div class="info-inner">
+          <p class="info-eyebrow" data-anim="fade-up">Location</p>
+          <svg class="info-thread" viewBox="0 0 220 28" aria-hidden="true"><path d="M2 14 C 40 2, 70 26, 110 14 S 180 2, 218 14" /></svg>
+          <h2 class="info-title" data-anim="fade-up" style="--d:.15s">한강버스 압구정선착장 루프탑</h2>
+          <img class="location-art" src="images/location.png" width="1536" height="1024" alt="한강버스 압구정선착장 그림" data-anim="fade-up" style="--d:.25s" />
+          <div class="map-buttons" data-anim="fade-up" style="--d:.35s">
+            <a class="map-btn" href="https://map.naver.com/p/search/%ED%95%9C%EA%B0%95%EB%B2%84%EC%8A%A4%20%EC%95%95%EA%B5%AC%EC%A0%95%EC%84%A0%EC%B0%A9%EC%9E%A5" target="_blank" rel="noopener">네이버 지도</a>
+            <a class="map-btn" href="https://map.kakao.com/link/search/%ED%95%9C%EA%B0%95%EB%B2%84%EC%8A%A4%20%EC%95%95%EA%B5%AC%EC%A0%95%EC%84%A0%EC%B0%A9%EC%9E%A5" target="_blank" rel="noopener">카카오맵</a>
+          </div>
+          <div class="route" data-anim="fade-up" style="--d:.5s">
+            <div class="route-item">
+              <h3>대중교통</h3>
+              <p>3호선 압구정역에서 <b>240번 버스</b> 이용,<br />압구정선착장 하차</p>
+              <p class="route-or">또는 압구정역에서 도보 20분 내외</p>
+            </div>
+            <div class="route-item">
+              <h3>자가용</h3>
+              <p><b>잠원한강공원 제3주차장</b></p>
+              <p class="route-note">주말에는 혼잡할 수 있어<br />대중교통 이용을 권장합니다.</p>
+            </div>
+          </div>
+        </div></div>
+      </section>
+
+      <!-- 13 축의 없는 결혼식 -->
+      <section class="info-page">
+        <div class="info-scroll"><div class="info-inner">
+          <svg class="info-heart" viewBox="0 0 120 110" aria-hidden="true">
+            <path d="M60 100 C 20 72, 4 50, 8 30 C 12 10, 38 2, 52 18 C 56 22, 58 26, 60 30 C 62 26, 64 22, 68 18 C 82 2, 108 10, 112 30 C 116 50, 100 72, 60 100 Z" />
+          </svg>
+          <h2 class="info-title" data-anim="fade-up" style="--d:.2s">축의 없는 결혼식</h2>
+          <svg class="info-thread" viewBox="0 0 220 28" aria-hidden="true"><path d="M2 14 C 40 2, 70 26, 110 14 S 180 2, 218 14" /></svg>
+          <p class="info-message" data-anim="fade-up" style="--d:.4s">
+            축하하는 마음만 받겠습니다.<br />
+            못 오시더라도<br />
+            멀리서 축하해주세요.
+          </p>
+        </div></div>
+      </section>
+
+      <!-- 14 참석 여부 -->
+      <section class="info-page">
+        <div class="info-scroll"><div class="info-inner">
+          <p class="info-eyebrow" data-anim="fade-up">R.S.V.P.</p>
+          <svg class="info-thread" viewBox="0 0 220 28" aria-hidden="true"><path d="M2 14 C 40 2, 70 26, 110 14 S 180 2, 218 14" /></svg>
+          <h2 class="info-title" data-anim="fade-up" style="--d:.15s">참석 여부를 알려주세요</h2>
+          <form class="rsvp" id="rsvp" data-anim="fade-up" style="--d:.3s" novalidate>
+            <label class="rsvp-field">
+              <span>성함</span>
+              <input type="text" name="name" autocomplete="name" placeholder="성함을 입력해주세요" required />
+            </label>
+            <div class="rsvp-field">
+              <span>참석 여부</span>
+              <div class="rsvp-choice" role="radiogroup">
+                <label><input type="radio" name="attend" value="yes" required /><em>참석할게요</em></label>
+                <label><input type="radio" name="attend" value="no" /><em>마음으로 축하할게요</em></label>
+              </div>
+            </div>
+            <div class="rsvp-field rsvp-count" hidden>
+              <span>참석 인원 <small>(본인 포함)</small></span>
+              <div class="stepper">
+                <button type="button" data-step="-1" aria-label="인원 줄이기">−</button>
+                <output name="countView">1</output>
+                <input type="hidden" name="count" value="1" />
+                <button type="button" data-step="1" aria-label="인원 늘리기">+</button>
+              </div>
+            </div>
+            <button class="rsvp-submit" type="submit">전달하기</button>
+            <p class="rsvp-error" aria-live="polite"></p>
+          </form>
+          <div class="rsvp-done" id="rsvpDone" hidden>
+            <p class="rsvp-done-title">마음 전해주셔서 감사합니다</p>
+            <p class="rsvp-done-body"></p>
+            <button type="button" class="rsvp-edit" id="rsvpEdit">다시 작성하기</button>
+          </div>
+        </div></div>
+      </section>
+
+    </div>
+
+    <!-- 표지: 탭하면 책이 펼쳐지며 스토리 시작 -->
+    <div class="cover" id="cover" role="button" tabindex="0" aria-label="표지를 탭하여 이야기 시작">
+      <div class="book" id="book">
+        <!-- 표지를 넘기면 보이는 첫 장 (1장 장면과 똑같이 JS가 채운다) -->
+        <div class="book-page" id="bookPage"></div>
+        <div class="book-leaf" id="bookLeaf">
+          <div class="book-leaf-front">
+            <img src="images/front_cover.png" width="1086" height="1448" alt="Woojin &amp; Jueun · Our Wedding" />
+          </div>
+          <div class="book-leaf-back"></div>
+        </div>
+      </div>
+      <p class="cover-hint">탭하여 펼치기</p>
+    </div>
+
+    <!-- 페이지 넘김 -->
+    <nav class="pager" aria-label="장면 이동">
+      <button class="pager-btn" id="prev" aria-label="이전 장면">&#8249;</button>
+      <span class="pager-count"><b id="pageNow">1</b> / <span id="pageTotal">14</span></span>
+      <button class="pager-btn" id="next" aria-label="다음 장면">&#8250;</button>
+    </nav>
+
+  </main>
+
+  <script src="js/masks.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
